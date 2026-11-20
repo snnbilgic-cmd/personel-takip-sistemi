@@ -7,10 +7,20 @@ export async function checkNfc() {
   if (Capacitor.getPlatform() === 'web') {
     return { supported: false, enabled: false, reason: 'Web platformunda NFC çalışmaz' };
   }
-  const { supported } = await CapacitorNfc.isSupported();
-  if (!supported) return { supported: false, enabled: false, reason: 'Cihazda NFC yok' };
-  const { status } = await CapacitorNfc.getStatus();
-  return { supported: true, enabled: status === 'NFC_ENABLED' || status === 'enabled', reason: status };
+  try {
+    const { supported } = await CapacitorNfc.isSupported();
+    if (!supported) {
+      return { supported: false, enabled: false, reason: 'Cihazda NFC donanımı yok' };
+    }
+    
+    const { status } = await CapacitorNfc.getStatus();
+    // Eklenti dokümanına göre, durum 'NFC_DISABLED' değilse NFC açıktır.
+    const isEnabled = status !== 'NFC_DISABLED';
+    
+    return { supported: true, enabled: isEnabled, reason: status };
+  } catch (error) {
+    return { supported: false, enabled: false, reason: error.message || 'NFC kontrolü başarısız' };
+  }
 }
 
 export async function startNfc(onTag) {
